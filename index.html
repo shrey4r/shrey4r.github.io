@@ -1,147 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Blow to Switch Image</title>
-<style>
-  html, body {
-    margin: 0;
-    height: 100%;
-    background-color: #0b0b0b;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    transition: background 0.4s ease;
-  }
-
-  img {
-    max-width: 90vw;
-    max-height: 90vh;
-    object-fit: contain;
-    transition: opacity 0.3s ease;
-    user-select: none;
-  }
-
-  .hidden {
-    opacity: 0;
-  }
-
-  .controls {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    color: #ccc;
-    font-family: monospace;
-    text-align: center;
-  }
-
-  button {
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.3);
-    color: #fff;
-    font-family: monospace;
-    padding: 8px 14px;
-    border-radius: 6px;
-    cursor: pointer;
-    margin-right: 10px;
-  }
-
-  input[type="range"] {
-    vertical-align: middle;
-  }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blow Out Candle</title>
+  <style>
+    body {
+      background-color: #0b0b0b;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    img {
+      width: 400px;
+      height: auto;
+    }
+  </style>
 </head>
 <body>
-  <img id="mainImage" src="image1.jpg" alt="image placeholder">
+  <img id="cake" src="idle.gif" alt="Cake">
 
-  <div class="controls">
-    <button id="startBtn">🎤 Start Mic</button>
-    <button id="stopBtn" disabled>Stop</button>
-    <label>
-      Threshold:
-      <input id="threshold" type="range" min="0.02" max="0.25" step="0.005" value="0.25">
-    </label>
-    <span id="status">waiting…</span>
-  </div>
+  <script>
+    const threshold = 0.25; // mic volume threshold
+    const blowDuration = 2500; // how long blow.gif should play (in ms)
 
-<script>
-let audioCtx, analyser, source, stream, rafId;
-let lastTrigger = 0;
-const cooldownMs = 1500;
-const img = document.getElementById("mainImage");
-const startBtn = document.getElementById("startBtn");
-const stopBtn = document.getElementById("stopBtn");
-const statusEl = document.getElementById("status");
-const thresholdSlider = document.getElementById("threshold");
-let userThreshold = parseFloat(thresholdSlider.value);
+    let audioContext, analyser, dataArray;
+    let hasBlown = false;
+    const img = document.getElementById("cake");
 
-thresholdSlider.addEventListener("input", () => {
-  userThreshold = parseFloat(thresholdSlider.value);
-});
-
-startBtn.addEventListener("click", async () => {
-  try {
-    startBtn.disabled = true;
-    statusEl.textContent = "Requesting mic...";
-    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 2048;
-    source = audioCtx.createMediaStreamSource(stream);
-    source.connect(analyser);
-    statusEl.textContent = "Mic active — blow to trigger";
-    stopBtn.disabled = false;
-    monitor();
-  } catch (err) {
-    console.error(err);
-    statusEl.textContent = "Mic access denied.";
-    startBtn.disabled = false;
-  }
-});
-
-stopBtn.addEventListener("click", stopAll);
-
-function stopAll() {
-  if (rafId) cancelAnimationFrame(rafId);
-  if (source) source.disconnect();
-  if (analyser) analyser.disconnect();
-  if (stream) stream.getTracks().forEach(t => t.stop());
-  if (audioCtx) audioCtx.close();
-  startBtn.disabled = false;
-  stopBtn.disabled = true;
-  statusEl.textContent = "Mic stopped.";
-}
-
-function monitor() {
-  const buffer = new Float32Array(analyser.fftSize);
-  const check = () => {
-    analyser.getFloatTimeDomainData(buffer);
-    let sum = 0;
-    for (let i = 0; i < buffer.length; i++) sum += buffer[i] * buffer[i];
-    const rms = Math.sqrt(sum / buffer.length);
-    const now = performance.now();
-
-    if (rms > userThreshold && now - lastTrigger > cooldownMs) {
-      lastTrigger = now;
-      triggerImageSwap();
+    async function startMic() {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioContext = new AudioContext();
+      const source = audioContext.createMediaStreamSource(stream);
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      const bufferLength = analyser.frequencyBinCount;
+      dataArray = new Uint8Array(bufferLength);
+      source.connect(analyser);
+      detectBlow();
     }
 
-    rafId = requestAnimationFrame(check);
-  };
-  check();
-}
+    function detectBlow() {
+      if (hasBlown) return;
+      requestAnimationFrame(detectBlow);
+      analyser.getByteFrequencyData(dataArray);
+      const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length / 255;
+      if (avg > threshold) {
+        triggerBlow();
+      }
+    }
 
-function triggerImageSwap() {
-  img.classList.add("hidden");
-  statusEl.textContent = "Blow detected!";
-  setTimeout(() => {
-    img.src = img.src.includes("image1.jpg") ? "image2.jpg" : "image1.jpg";
-    img.classList.remove("hidden");
-  }, 250);
-}
-</script>
+    function triggerBlow() {
+      hasBlown = true;
+      img.src = "blow.gif";
+      setTimeout(() => {
+        img.src = "blown.png";
+      }, blowDuration);
+    }
+
+    startMic().catch(err => {
+      console.error("Microphone error:", err);
+      alert("Please allow microphone access for this to work!");
+    });
+  </script>
 </body>
 </html>
