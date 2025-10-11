@@ -1,203 +1,132 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
+<meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Blow to Turn Green</title>
+<title>Blow to Switch Image</title>
 <style>
-  :root {
-    --bg-blue: #0f62fe;
-    --bg-green: #00c853;
-    --text: #ffffff;
-  }
-
-  html,body {
-    height: 100%;
+  html, body {
     margin: 0;
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-    background: var(--bg-blue);
-    color: var(--text);
+    height: 100%;
+    background-color: #0b0b0b;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 350ms ease;
+    overflow: hidden;
+    transition: background 0.4s ease;
   }
 
-  .container {
-    text-align: center;
-    max-width: 700px;
-    padding: 24px;
+  img {
+    max-width: 90vw;
+    max-height: 90vh;
+    object-fit: contain;
+    transition: opacity 0.3s ease;
+    user-select: none;
   }
 
-  h1 { margin: 0 0 12px; font-size: 1.4rem; }
-  p { margin: 0 0 18px; color: rgba(255,255,255,0.9); }
+  .hidden {
+    opacity: 0;
+  }
 
   .controls {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    justify-content: center;
-    flex-wrap: wrap;
-    margin-bottom: 12px;
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #ccc;
+    font-family: monospace;
+    text-align: center;
   }
 
   button {
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.12);
-    color: var(--text);
-    padding: 10px 14px;
-    border-radius: 8px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: #fff;
+    font-family: monospace;
+    padding: 8px 14px;
+    border-radius: 6px;
     cursor: pointer;
-    font-weight: 600;
+    margin-right: 10px;
   }
 
-  button:disabled { opacity: 0.5; cursor: not-allowed; }
-
-  .meter {
-    width: 220px;
-    height: 14px;
-    background: rgba(255,255,255,0.08);
-    border-radius: 999px;
-    overflow: hidden;
-    box-shadow: inset 0 0 8px rgba(0,0,0,0.25);
+  input[type="range"] {
+    vertical-align: middle;
   }
-  .meter > i {
-    display: block;
-    height: 100%;
-    width: 0%;
-    background: linear-gradient(90deg, #ffd54d, #ff7043);
-    transition: width 60ms linear;
-  }
-
-  .status {
-    margin-top: 10px;
-    font-size: 0.95rem;
-    opacity: 0.95;
-  }
-
-  /* when green state is active */
-  .green {
-    background: var(--bg-green) !important;
-  }
-
-  footer { margin-top:18px; font-size:0.8rem; opacity:0.9; color: rgba(255,255,255,0.85); }
-  input[type="range"] { width: 160px; }
 </style>
 </head>
 <body>
-  <div class="container" id="app">
-    <h1>Blow into your mic to turn the page green 🎈</h1>
-    <p>Press <strong>Start Microphone</strong> and blow gently into the mic. Adjust sensitivity if needed.</p>
+  <img id="mainImage" src="image1.jpg" alt="image placeholder">
 
-    <div class="controls">
-      <button id="startBtn">Start Microphone</button>
-      <button id="stopBtn" disabled>Stop</button>
-
-      <div style="display:flex;flex-direction:column;align-items:center;">
-        <label style="font-size:0.8rem; margin-bottom:6px;">Threshold</label>
-        <input id="threshold" type="range" min="0.02" max="0.25" step="0.005" value="0.07">
-      </div>
-    </div>
-
-    <div class="meter" aria-hidden="true"><i id="levelBar"></i></div>
-    <div class="status" id="status">Microphone inactive</div>
-
-    <footer>Note: your browser will ask for mic permission. Works best over HTTPS (GitHub Pages is fine).</footer>
+  <div class="controls">
+    <button id="startBtn">🎤 Start Mic</button>
+    <button id="stopBtn" disabled>Stop</button>
+    <label>
+      Threshold:
+      <input id="threshold" type="range" min="0.02" max="0.25" step="0.005" value="0.25">
+    </label>
+    <span id="status">waiting…</span>
   </div>
 
 <script>
-/*
-  Simple microphone RMS detector that toggles the page background to green
-  when a loud burst (a "blow") is detected. Uses AnalyserNode + getFloatTimeDomainData
-*/
-
-let audioCtx = null;
-let analyser = null;
-let source = null;
-let rafId = null;
-let stream = null;
+let audioCtx, analyser, source, stream, rafId;
 let lastTrigger = 0;
-const cooldownMs = 1200; // don't retrigger too fast (1.2s)
-const greenHoldMs = 1400; // how long to keep green state
-
-const startBtn = document.getElementById('startBtn');
-const stopBtn = document.getElementById('stopBtn');
-const levelBar = document.getElementById('levelBar');
-const status = document.getElementById('status');
-const thresholdSlider = document.getElementById('threshold');
-
+const cooldownMs = 1500;
+const img = document.getElementById("mainImage");
+const startBtn = document.getElementById("startBtn");
+const stopBtn = document.getElementById("stopBtn");
+const statusEl = document.getElementById("status");
+const thresholdSlider = document.getElementById("threshold");
 let userThreshold = parseFloat(thresholdSlider.value);
 
-thresholdSlider.addEventListener('input', () => {
+thresholdSlider.addEventListener("input", () => {
   userThreshold = parseFloat(thresholdSlider.value);
-  status.innerText = `Threshold: ${userThreshold.toFixed(3)} — ${status.textContent.includes('active') ? '' : ''}`;
 });
 
-startBtn.addEventListener('click', async () => {
+startBtn.addEventListener("click", async () => {
   try {
     startBtn.disabled = true;
-    status.innerText = 'Requesting microphone permission...';
+    statusEl.textContent = "Requesting mic...";
     stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     analyser = audioCtx.createAnalyser();
     analyser.fftSize = 2048;
-    analyser.smoothingTimeConstant = 0.2;
-
     source = audioCtx.createMediaStreamSource(stream);
     source.connect(analyser);
-
-    status.innerText = 'Microphone active — blow to trigger';
+    statusEl.textContent = "Mic active — blow to trigger";
     stopBtn.disabled = false;
-
     monitor();
   } catch (err) {
     console.error(err);
-    status.innerText = 'Microphone permission denied or error. Please check browser settings.';
+    statusEl.textContent = "Mic access denied.";
     startBtn.disabled = false;
   }
 });
 
-stopBtn.addEventListener('click', () => {
-  stopAll();
-  startBtn.disabled = false;
-  stopBtn.disabled = true;
-  status.innerText = 'Microphone stopped';
-});
+stopBtn.addEventListener("click", stopAll);
 
 function stopAll() {
   if (rafId) cancelAnimationFrame(rafId);
-  if (analyser) analyser.disconnect();
   if (source) source.disconnect();
-  if (stream) {
-    stream.getTracks().forEach(t => t.stop());
-    stream = null;
-  }
-  if (audioCtx) {
-    try { audioCtx.close(); } catch(e){}
-    audioCtx = null;
-  }
+  if (analyser) analyser.disconnect();
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  if (audioCtx) audioCtx.close();
+  startBtn.disabled = false;
+  stopBtn.disabled = true;
+  statusEl.textContent = "Mic stopped.";
 }
 
 function monitor() {
   const buffer = new Float32Array(analyser.fftSize);
   const check = () => {
     analyser.getFloatTimeDomainData(buffer);
-    // compute RMS
     let sum = 0;
-    for (let i = 0; i < buffer.length; i++) {
-      sum += buffer[i] * buffer[i];
-    }
+    for (let i = 0; i < buffer.length; i++) sum += buffer[i] * buffer[i];
     const rms = Math.sqrt(sum / buffer.length);
-
-    // update meter (0..1) — clamp for display
-    const display = Math.min(1, rms * 6); // scale for nicer visualization
-    levelBar.style.width = (display * 100) + '%';
-
-    // trigger detection: short burst above threshold and cooldown
     const now = performance.now();
+
     if (rms > userThreshold && now - lastTrigger > cooldownMs) {
       lastTrigger = now;
-      triggerGreen();
+      triggerImageSwap();
     }
 
     rafId = requestAnimationFrame(check);
@@ -205,37 +134,14 @@ function monitor() {
   check();
 }
 
-let greenTimeout = null;
-function triggerGreen() {
-  document.documentElement.classList.add('green'); // set body green via .green style
-  status.innerText = 'Detected blow — green active!';
-  // apply class on body (we used css on body when .green exists)
-  document.body.classList.add('green');
-
-  if (greenTimeout) clearTimeout(greenTimeout);
-  greenTimeout = setTimeout(() => {
-    document.body.classList.remove('green');
-    status.innerText = 'Microphone active — blow to trigger';
-  }, greenHoldMs);
+function triggerImageSwap() {
+  img.classList.add("hidden");
+  statusEl.textContent = "Blow detected!";
+  setTimeout(() => {
+    img.src = img.src.includes("image1.jpg") ? "image2.jpg" : "image1.jpg";
+    img.classList.remove("hidden");
+  }, 250);
 }
-
-// small safeguard: remove green class on page load to ensure initial blue
-document.body.classList.remove('green');
-
-// restore page background when class toggles (so CSS transition is smooth)
-const observer = new MutationObserver(() => {
-  // if body has class 'green', force background to green
-  if (document.body.classList.contains('green')) {
-    document.documentElement.style.background = getComputedStyle(document.documentElement).getPropertyValue('--bg-green') || '#00c853';
-  } else {
-    document.documentElement.style.background = getComputedStyle(document.documentElement).getPropertyValue('--bg-blue') || '#0f62fe';
-  }
-});
-observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-
-// if user navigates away or closes, clean up
-window.addEventListener('pagehide', stopAll);
-window.addEventListener('beforeunload', stopAll);
 </script>
 </body>
 </html>
