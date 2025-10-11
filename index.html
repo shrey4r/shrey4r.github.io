@@ -9,36 +9,73 @@
       background-color: #0b0b0b;
       height: 100vh;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
     }
+
     img {
       width: 400px;
       height: auto;
+      display: block;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      background-color: #3b82f6;
+      color: white;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    button:hover {
+      background-color: #2563eb;
+    }
+
+    button:disabled {
+      background-color: #555;
+      cursor: not-allowed;
     }
   </style>
 </head>
 <body>
   <img id="cake" src="idle.gif" alt="Cake">
+  <button id="startBtn">Start</button>
 
   <script>
-    const threshold = 0.25; // mic volume threshold
-    const blowDuration = 2500; // how long blow.gif should play (in ms)
+    const threshold = 0.25; // mic sensitivity
+    const blowDuration = 2500; // ms for blow.gif duration
 
     let audioContext, analyser, dataArray;
     let hasBlown = false;
     const img = document.getElementById("cake");
+    const startBtn = document.getElementById("startBtn");
+
+    startBtn.addEventListener("click", startMic);
 
     async function startMic() {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioContext = new AudioContext();
-      const source = audioContext.createMediaStreamSource(stream);
-      analyser = audioContext.createAnalyser();
-      analyser.fftSize = 256;
-      const bufferLength = analyser.frequencyBinCount;
-      dataArray = new Uint8Array(bufferLength);
-      source.connect(analyser);
-      detectBlow();
+      try {
+        startBtn.disabled = true;
+        startBtn.textContent = "Listening...";
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioContext = new AudioContext();
+        const source = audioContext.createMediaStreamSource(stream);
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        const bufferLength = analyser.frequencyBinCount;
+        dataArray = new Uint8Array(bufferLength);
+        source.connect(analyser);
+        detectBlow();
+      } catch (err) {
+        console.error("Microphone error:", err);
+        alert("Please allow microphone access for this to work!");
+        startBtn.disabled = false;
+        startBtn.textContent = "Start";
+      }
     }
 
     function detectBlow() {
@@ -58,11 +95,6 @@
         img.src = "blown.png";
       }, blowDuration);
     }
-
-    startMic().catch(err => {
-      console.error("Microphone error:", err);
-      alert("Please allow microphone access for this to work!");
-    });
   </script>
 </body>
 </html>
