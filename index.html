@@ -7,35 +7,29 @@
   <style>
     body {
       background-color: #0b0814;
+      background-image: url('bg.png');
+      /*background-size: cover; /* fills the screen */
+      background-size: contain;
+      image-rendering: pixelated;
+
+      background-repeat: no-repeat;
+      background-position: center bottom; /* aligns bottom edge */
       height: 100vh;
       margin: 0;
       overflow: hidden;
       display: flex;
       justify-content: center;
-      align-items: flex-end; /* pin content to bottom */
-      position: relative;
+      align-items: flex-end; /* pin the base to bottom */
     }
 
     #base {
-      width: 85vw; /* take up ~70% of the viewport width */
+      width: 85vw; /* scale as you like */
       height: auto;
       image-rendering: pixelated;
-      z-index: 1;
-    }
-
-    #grad {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      height: auto;
-      image-rendering: pixelated;
-      z-index: 0;
     }
   </style>
 </head>
 <body>
   <img id="base" src="base.png" alt="Base Scene">
-  <img id="grad" src="grad.png" alt="Bottom Gradient">
 </body>
 </html>
