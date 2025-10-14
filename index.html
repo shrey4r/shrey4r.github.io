@@ -16,27 +16,44 @@
       position: relative;
     }
 
+    /* Background */
     #background {
       position: absolute;
       bottom: 0;
       left: 50%;
       transform: translateX(-50%);
-      width: 100vw; /* fill full screen width */
+      width: 100vw;
       height: auto;
       image-rendering: pixelated;
       z-index: 0;
     }
 
+    /* Cake / base layer */
     #base {
       width: 85vw;
       height: auto;
       image-rendering: pixelated;
       z-index: 1;
+      position: relative;
+    }
+
+    /* Flame positioned relative to cake */
+    #flame {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 85vw; /* same scale as base */
+      height: auto;
+      image-rendering: pixelated;
+      z-index: 2;
+      pointer-events: none;
     }
   </style>
 </head>
 <body>
   <img id="background" src="bg.png" alt="Background">
+  <img id="flame" src="flame.gif" alt="Flame Animation">
   <img id="base" src="base.png" alt="Base Scene">
 </body>
 </html>
