@@ -7,29 +7,36 @@
   <style>
     body {
       background-color: #0b0814;
-      background-image: url('bg.png');
-      /*background-size: cover; /* fills the screen */
-      background-size: contain;
-      image-rendering: pixelated;
-
-      background-repeat: no-repeat;
-      background-position: center bottom; /* aligns bottom edge */
-      height: 100vh;
       margin: 0;
+      height: 100vh;
       overflow: hidden;
       display: flex;
       justify-content: center;
-      align-items: flex-end; /* pin the base to bottom */
+      align-items: flex-end;
+      position: relative;
+    }
+
+    #background {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100vw; /* fill full screen width */
+      height: auto;
+      image-rendering: pixelated;
+      z-index: 0;
     }
 
     #base {
-      width: 85vw; /* scale as you like */
+      width: 85vw;
       height: auto;
       image-rendering: pixelated;
+      z-index: 1;
     }
   </style>
 </head>
 <body>
+  <img id="background" src="bg.png" alt="Background">
   <img id="base" src="base.png" alt="Base Scene">
 </body>
 </html>
