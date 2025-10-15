@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>happy birthday</title>
-  <link rel="icon" type="image/png" href="tabIcon.png"> <!-- tab icon -->
+  <title>  happy birthday</title>
+  <link rel="icon" type="image/png" href="tabIcon.png">
   <style>
     body {
       background-color: #0b0814;
@@ -12,24 +12,36 @@
       height: 100vh;
       overflow: hidden;
       display: flex;
-      flex-direction: column;
       justify-content: center;
       align-items: center;
       position: relative;
     }
 
+    /* Base scene */
     #scene {
-      width: 85vw; /* overall scene scaled down 10% */
+      width: 85vw; /* scaled down 10% */
       height: auto;
       image-rendering: pixelated;
-      display: block;
       position: absolute;
       bottom: 0;
+      z-index: 1;
     }
 
+    /* Blow GIF overlay */
+    #blowGif {
+      width: 85vw;
+      height: auto;
+      image-rendering: pixelated;
+      position: absolute;
+      bottom: 0;
+      display: none;
+      z-index: 2;
+    }
+
+    /* Start mic button */
     #startBtn {
       position: absolute;
-      bottom: 200px; /* ~2 inches on standard screens */
+      bottom: 200px; /* manually placed ~2 inches from bottom */
       border: none;
       background: transparent;
       padding: 0;
@@ -39,7 +51,7 @@
     }
 
     #startBtn img {
-      width: 150px; /* ~20% smaller */
+      width: 150px;
       height: auto;
       display: block;
       image-rendering: pixelated;
@@ -57,20 +69,25 @@
   </style>
 </head>
 <body>
-  <img id="scene" src="idleC.gif">
-  <img id="blowGif" src="compBLOW.gif" style="position:absolute; bottom:0; display:none;">
-
-
+  <!-- Base scene -->
+  <img id="scene" src="idleC.gif" alt="Birthday Scene">
+  <!-- Blow GIF overlay -->
+  <img id="blowGif" src="compBLOW.gif" alt="Blow GIF">
+  <!-- Start mic button -->
   <button id="startBtn">
     <img src="button.png" alt="Start Mic">
   </button>
 
   <script>
     const threshold = 0.25; // mic sensitivity
-    const blowDuration = 3250; // duration of compBLOW.gif in ms
+    const blowDuration = 3250; // ms
 
     let audioContext, analyser, dataArray;
     let hasBlown = false;
+
+    // Preload blown PNG to prevent flicker
+    const blownImg = new Image();
+    blownImg.src = 'compBLOWN.png';
 
     async function initMic() {
       try {
@@ -90,6 +107,7 @@
 
     function listen() {
       const scene = document.getElementById('scene');
+      const blowGif = document.getElementById('blowGif');
       const btn = document.getElementById('startBtn');
 
       function checkVolume() {
@@ -98,15 +116,13 @@
 
         if (avg > threshold && !hasBlown) {
           hasBlown = true;
-          scene.src = 'compBLOW.gif';
           btn.classList.add('fade-out');
+          blowGif.style.display = 'block'; // show blow GIF
 
-          blowGif.style.display = 'block'; // start blow
           setTimeout(() => {
-            blowGif.style.display = 'none';
-            scene.src = 'compBLOWN.png';
+            blowGif.style.display = 'none'; // hide GIF
+            scene.src = blownImg.src; // permanently show blown PNG
           }, blowDuration);
-
         } else if (!hasBlown) {
           requestAnimationFrame(checkVolume);
         }
