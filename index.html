@@ -1,116 +1,51 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>  happy birthday baby</title>
-  <link rel="icon" type="image/png" href="tabIcon.png"> <!-- 👈 tab icon added -->
-  <style>
-    body {
-      background-color: #0b0814;
-      margin: 0;
-      height: 100vh;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      position: relative;
+<script>
+  const threshold = 0.25; // mic sensitivity
+  const blowDuration = 3250; // duration of compBLOW.gif in ms
+
+  let audioContext, analyser, dataArray;
+  let isBlown = false;
+
+  async function initMic() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const source = audioContext.createMediaStreamSource(stream);
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = 512;
+      const bufferLength = analyser.frequencyBinCount;
+      dataArray = new Uint8Array(bufferLength);
+      source.connect(analyser);
+      listen();
+    } catch (err) {
+      console.error('Mic access denied:', err);
     }
+  }
 
-    /* Scene slightly smaller overall */
-    #scene {
-      width: 90vw; /* scaled down by 10% */
-      height: auto;
-      image-rendering: pixelated;
-      display: block;
-      position: absolute;
-      bottom: 0;
-    }
+  function listen() {
+    const scene = document.getElementById('scene');
+    const btn = document.getElementById('startBtn');
 
-    #startBtn {
-      position: absolute;
-      bottom: 10px; /* slightly lower */
-      border: none;
-      background: none;
-      cursor: pointer;
-      transition: opacity 0.6s ease, transform 0.2s ease;
-      z-index: 10;
-    }
+    function checkVolume() {
+      analyser.getByteFrequencyData(dataArray);
+      const avg = dataArray.reduce((a, b) => a + b) / dataArray.length / 255;
 
-    #startBtn img {
-      width: 150px; /* ~20% smaller than before */
-      height: auto;
-      display: block;
-      image-rendering: pixelated;
-      image-rendering: crisp-edges; /* help preserve detail */
-    }
+      if (avg > threshold && !isBlown) {
+        isBlown = true;
+        scene.src = 'compBLOW.gif';
+        btn.classList.add('fade-out');
 
-    #startBtn:hover {
-      transform: scale(1.05);
-    }
-
-    #startBtn.fade-out {
-      opacity: 0;
-      pointer-events: none;
-    }
-  </style>
-</head>
-<body>
-  <img id="scene" src="idleC.gif" alt="Birthday Scene">
-
-  <button id="startBtn">
-    <img src="button.png" alt="Start Mic">
-  </button>
-
-  <script>
-    const threshold = 0.25; // mic sensitivity
-    const blowDuration = 3250; // duration of compBLOW.gif in ms
-
-    let audioContext, analyser, dataArray;
-
-    async function initMic() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const source = audioContext.createMediaStreamSource(stream);
-        analyser = audioContext.createAnalyser();
-        analyser.fftSize = 512;
-        const bufferLength = analyser.frequencyBinCount;
-        dataArray = new Uint8Array(bufferLength);
-        source.connect(analyser);
-        listen();
-      } catch (err) {
-        console.error('Mic access denied:', err);
+        setTimeout(() => {
+          scene.src = 'blown.png'; // final post-blow state
+        }, blowDuration);
+      } else if (!isBlown) {
+        requestAnimationFrame(checkVolume);
       }
     }
+    requestAnimationFrame(checkVolume);
+  }
 
-    function listen() {
-      const scene = document.getElementById('scene');
-      const btn = document.getElementById('startBtn');
-
-      function checkVolume() {
-        analyser.getByteFrequencyData(dataArray);
-        const avg = dataArray.reduce((a, b) => a + b) / dataArray.length / 255;
-
-        if (avg > threshold) {
-          scene.src = 'compBLOW.gif';
-          btn.classList.add('fade-out');
-          setTimeout(() => {
-            scene.src = 'idleC.gif';
-            btn.classList.remove('fade-out');
-          }, blowDuration);
-        } else {
-          requestAnimationFrame(checkVolume);
-        }
-      }
-      requestAnimationFrame(checkVolume);
-    }
-
-    document.getElementById('startBtn').addEventListener('click', () => {
-      initMic();
-      document.getElementById('startBtn').classList.add('fade-out');
-    });
-  </script>
-</body>
-</html>
+  document.getElementById('startBtn').addEventListener('click', () => {
+    initMic();
+    document.getElementById('startBtn').classList.add('fade-out');
+  });
+</script>
