@@ -26,37 +26,43 @@
       bottom: 0;
     }
 
-    button {
+    #startBtn {
       position: absolute;
-      bottom: 30px;
-      padding: 10px 20px;
-      font-size: 1rem;
+      bottom: 32px;
       border: none;
-      border-radius: 8px;
-      background-color: #3b82f6;
-      color: white;
+      background: none;
       cursor: pointer;
-      transition: background 0.2s ease;
+      transition: opacity 0.6s ease, transform 0.2s ease;
       z-index: 10;
     }
 
-    button:hover {
-      background-color: #2563eb;
+    #startBtn img {
+      width: 190px; /* slightly larger */
+      height: auto;
+      display: block;
+      image-rendering: pixelated;
     }
 
-    button:disabled {
-      background-color: #555;
-      cursor: not-allowed;
+    #startBtn:hover {
+      transform: scale(1.05);
+    }
+
+    #startBtn.fade-out {
+      opacity: 0;
+      pointer-events: none;
     }
   </style>
 </head>
 <body>
   <img id="scene" src="idleC.gif" alt="Birthday Scene">
-  <button id="startBtn">Start Mic</button>
+
+  <button id="startBtn">
+    <img src="button.png" alt="Start Mic">
+  </button>
 
   <script>
     const threshold = 0.25; // mic sensitivity
-    const blowDuration = 3250; // adjust this to the actual duration of compBLOW.gif (in ms)
+    const blowDuration = 3250; // duration of compBLOW.gif in ms
 
     let audioContext, analyser, dataArray;
     let hasBlown = false;
@@ -67,8 +73,9 @@
 
     async function startMic() {
       try {
-        startBtn.disabled = true;
-        startBtn.textContent = "Listening...";
+        startBtn.classList.add("fade-out"); // start fading out
+        setTimeout(() => startBtn.style.display = "none", 800); // remove after fade
+
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         audioContext = new AudioContext();
         const source = audioContext.createMediaStreamSource(stream);
@@ -81,8 +88,7 @@
       } catch (err) {
         console.error("Microphone error:", err);
         alert("Please allow microphone access for this to work!");
-        startBtn.disabled = false;
-        startBtn.textContent = "Start Mic";
+        startBtn.classList.remove("fade-out");
       }
     }
 
@@ -91,17 +97,14 @@
       requestAnimationFrame(detectBlow);
       analyser.getByteFrequencyData(dataArray);
       const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length / 255;
-      if (avg > threshold) {
-        triggerBlow();
-      }
+      if (avg > threshold) triggerBlow();
     }
 
     function triggerBlow() {
       hasBlown = true;
-      img.src = "compBLOW.gif"; // switch to blowing animation
-      startBtn.style.display = "none"; // hide button once done
+      img.src = "compBLOW.gif";
       setTimeout(() => {
-        img.src = "compBLOWN.png"; // final still image after animation
+        img.src = "compBLOWN.png";
       }, blowDuration);
     }
   </script>
