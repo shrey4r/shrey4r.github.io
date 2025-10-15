@@ -11,19 +11,99 @@
       height: 100vh;
       overflow: hidden;
       display: flex;
+      flex-direction: column;
       justify-content: center;
-      align-items: flex-end; /* pins to bottom */
+      align-items: center;
+      position: relative;
     }
 
     #scene {
-      width: 100vw; /* fills screen width */
+      width: 100vw;
       height: auto;
-      image-rendering: pixelated; /* keeps crisp pixels */
+      image-rendering: pixelated;
       display: block;
+      position: absolute;
+      bottom: 0;
+    }
+
+    button {
+      position: absolute;
+      bottom: 30px;
+      padding: 10px 20px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      background-color: #3b82f6;
+      color: white;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      z-index: 10;
+    }
+
+    button:hover {
+      background-color: #2563eb;
+    }
+
+    button:disabled {
+      background-color: #555;
+      cursor: not-allowed;
     }
   </style>
 </head>
 <body>
   <img id="scene" src="idleC.gif" alt="Birthday Scene">
+  <button id="startBtn">Start Mic</button>
+
+  <script>
+    const threshold = 0.25; // mic sensitivity
+    const blowDuration = 3250; // adjust this to the actual duration of compBLOW.gif (in ms)
+
+    let audioContext, analyser, dataArray;
+    let hasBlown = false;
+    const img = document.getElementById("scene");
+    const startBtn = document.getElementById("startBtn");
+
+    startBtn.addEventListener("click", startMic);
+
+    async function startMic() {
+      try {
+        startBtn.disabled = true;
+        startBtn.textContent = "Listening...";
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioContext = new AudioContext();
+        const source = audioContext.createMediaStreamSource(stream);
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        const bufferLength = analyser.frequencyBinCount;
+        dataArray = new Uint8Array(bufferLength);
+        source.connect(analyser);
+        detectBlow();
+      } catch (err) {
+        console.error("Microphone error:", err);
+        alert("Please allow microphone access for this to work!");
+        startBtn.disabled = false;
+        startBtn.textContent = "Start Mic";
+      }
+    }
+
+    function detectBlow() {
+      if (hasBlown) return;
+      requestAnimationFrame(detectBlow);
+      analyser.getByteFrequencyData(dataArray);
+      const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length / 255;
+      if (avg > threshold) {
+        triggerBlow();
+      }
+    }
+
+    function triggerBlow() {
+      hasBlown = true;
+      img.src = "compBLOW.gif"; // switch to blowing animation
+      startBtn.style.display = "none"; // hide button once done
+      setTimeout(() => {
+        img.src = "compBLOWN.png"; // final still image after animation
+      }, blowDuration);
+    }
+  </script>
 </body>
 </html>
