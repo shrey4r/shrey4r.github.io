@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>  happy birthday baby</title>
+  <title>happy birthday baby</title>
   <link rel="icon" type="image/png" href="tabIcon.png">
   <style>
     body {
@@ -17,7 +17,7 @@
       position: relative;
     }
 
-    /* Base scene */
+    /* Base scene (cake, table, etc.) */
     #scene {
       width: 85vw;
       height: auto;
@@ -25,6 +25,17 @@
       position: absolute;
       bottom: 0;
       z-index: 1;
+    }
+
+    /* Flowers layer (static overlay) */
+    #flowers {
+      width: 85vw;
+      height: auto;
+      image-rendering: pixelated;
+      position: absolute;
+      bottom: 0;
+      z-index: 2; /* above base scene, below interactive elements */
+      pointer-events: none; /* ensures it doesn't block clicks */
     }
 
     /* Blow GIF overlay */
@@ -35,7 +46,7 @@
       position: absolute;
       bottom: 0;
       display: none;
-      z-index: 2;
+      z-index: 3;
     }
 
     /* Start mic button */
@@ -95,6 +106,9 @@
 <body>
   <!-- Base scene -->
   <img id="scene" src="idleC.gif" alt="Birthday Scene">
+
+  <!-- Flowers overlay -->
+  <img id="flowers" src="flowers.png" alt="Flowers Overlay">
 
   <!-- Blow GIF overlay -->
   <img id="blowGif" src="compBLOW.gif" alt="Blow GIF">
