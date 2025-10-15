@@ -29,7 +29,7 @@
 
     #startBtn {
       position: absolute;
-      bottom: -5px; /* moved down ~6px */
+      bottom: 200px; /* ~2 inches on standard screens */
       border: none;
       background: transparent;
       padding: 0;
@@ -57,7 +57,9 @@
   </style>
 </head>
 <body>
-  <img id="scene" src="idleC.gif" alt="Birthday Scene">
+  <img id="scene" src="idleC.gif">
+  <img id="blowGif" src="compBLOW.gif" style="position:absolute; bottom:0; display:none;">
+
 
   <button id="startBtn">
     <img src="button.png" alt="Start Mic">
@@ -99,9 +101,12 @@
           scene.src = 'compBLOW.gif';
           btn.classList.add('fade-out');
 
+          blowGif.style.display = 'block'; // start blow
           setTimeout(() => {
-            scene.src = 'compBLOWN.png'; // stays on blown state permanently
+            blowGif.style.display = 'none';
+            scene.src = 'compBLOWN.png';
           }, blowDuration);
+
         } else if (!hasBlown) {
           requestAnimationFrame(checkVolume);
         }
