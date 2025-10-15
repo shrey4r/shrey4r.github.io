@@ -34,8 +34,8 @@
       image-rendering: pixelated;
       position: absolute;
       bottom: 0;
-      z-index: 2; /* above base scene, below interactive elements */
-      pointer-events: none; /* ensures it doesn't block clicks */
+      z-index: 3; /* above blowGif and base scene */
+      pointer-events: none;
     }
 
     /* Blow GIF overlay */
@@ -46,7 +46,7 @@
       position: absolute;
       bottom: 0;
       display: none;
-      z-index: 3;
+      z-index: 2; /* below flowers */
     }
 
     /* Start mic button */
@@ -107,11 +107,11 @@
   <!-- Base scene -->
   <img id="scene" src="idleC.gif" alt="Birthday Scene">
 
-  <!-- Flowers overlay -->
-  <img id="flowers" src="flowers.png" alt="Flowers Overlay">
-
   <!-- Blow GIF overlay -->
   <img id="blowGif" src="compBLOW.gif" alt="Blow GIF">
+
+  <!-- Flowers overlay -->
+  <img id="flowers" src="flowers.png" alt="Flowers Overlay">
 
   <!-- Start mic button -->
   <button id="startBtn">
@@ -124,15 +124,15 @@
   </button>
 
   <script>
-    const threshold = 0.25; // mic sensitivity
+    const threshold = 0.3; // slightly higher mic sensitivity threshold
     const blowDuration = 3250; // duration of compBLOW.gif in ms
 
     let audioContext, analyser, dataArray;
     let hasBlown = false;
 
-    // Preload blown PNG to prevent flicker
-    const blownImg = new Image();
-    blownImg.src = 'compBLOWN.png';
+    // Preload blown GIF to prevent flicker
+    const blownGif = new Image();
+    blownGif.src = 'blown.gif';
 
     async function initMic() {
       try {
@@ -166,7 +166,7 @@
 
           setTimeout(() => {
             blowGif.style.display = 'none'; // instantly hide after animation
-            scene.src = blownImg.src; // switch to blown image
+            scene.src = blownGif.src; // switch to blown.gif
           }, blowDuration);
         } else if (!hasBlown) {
           requestAnimationFrame(checkVolume);
@@ -179,6 +179,11 @@
     document.getElementById('startBtn').addEventListener('click', () => {
       initMic();
       document.getElementById('startBtn').classList.add('fade-out');
+    });
+
+    // Open PDF when letter button is clicked
+    document.getElementById('letterBtn').addEventListener('click', () => {
+      window.open('letter.pdf', '_blank');
     });
   </script>
 </body>
