@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>  happy birthday</title>
+  <title>happy birthday</title>
   <link rel="icon" type="image/png" href="tabIcon.png">
   <style>
     body {
@@ -34,14 +34,15 @@
       image-rendering: pixelated;
       position: absolute;
       bottom: 0;
-      display: none;
+      opacity: 1;
+      transition: opacity 0.7s ease; /* fade-out for smoother transition */
       z-index: 2;
     }
 
     /* Start mic button */
     #startBtn {
       position: absolute;
-      bottom: 100px; /* manually placed ~2 inches from bottom */
+      bottom: 15px; /* slightly above bottom */
       border: none;
       background: transparent;
       padding: 0;
@@ -66,21 +67,54 @@
       opacity: 0;
       pointer-events: none;
     }
+
+    /* Letter button (appears after blow completes) */
+    #letterBtn {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      border: none;
+      background: transparent;
+      padding: 0;
+      cursor: pointer;
+      display: none;
+      z-index: 5;
+      transition: transform 0.2s ease;
+    }
+
+    #letterBtn img {
+      width: 120px; /* default size */
+      height: auto;
+      image-rendering: pixelated;
+    }
+
+    #letterBtn:hover {
+      transform: translate(-50%, -50%) scale(1.05);
+    }
   </style>
 </head>
 <body>
   <!-- Base scene -->
   <img id="scene" src="idleC.gif" alt="Birthday Scene">
+
   <!-- Blow GIF overlay -->
-  <img id="blowGif" src="compBLOW.gif" alt="Blow GIF">
+  <img id="blowGif" src="compBLOW.gif" alt="Blow GIF" style="display: none;">
+
   <!-- Start mic button -->
   <button id="startBtn">
     <img src="button.png" alt="Start Mic">
   </button>
 
+  <!-- Letter button (appears after blow) -->
+  <button id="letterBtn">
+    <img src="letter.png" alt="Letter">
+  </button>
+
   <script>
     const threshold = 0.25; // mic sensitivity
     const blowDuration = 3250; // ms
+    const fadeDuration = 700; // fade-out duration for blow gif
 
     let audioContext, analyser, dataArray;
     let hasBlown = false;
@@ -109,6 +143,7 @@
       const scene = document.getElementById('scene');
       const blowGif = document.getElementById('blowGif');
       const btn = document.getElementById('startBtn');
+      const letterBtn = document.getElementById('letterBtn');
 
       function checkVolume() {
         analyser.getByteFrequencyData(dataArray);
@@ -118,15 +153,21 @@
           hasBlown = true;
           btn.classList.add('fade-out');
           blowGif.style.display = 'block'; // show blow GIF
+          blowGif.style.opacity = '1';
 
           setTimeout(() => {
-            blowGif.style.display = 'none'; // hide GIF
-            scene.src = blownImg.src; // permanently show blown PNG
-          }, blowDuration);
+            blowGif.style.opacity = '0'; // start fading out
+            setTimeout(() => {
+              blowGif.style.display = 'none';
+              scene.src = blownImg.src; // permanently show blown PNG
+              letterBtn.style.display = 'block'; // reveal letter button
+            }, fadeDuration);
+          }, blowDuration - fadeDuration); // start fade before the gif ends
         } else if (!hasBlown) {
           requestAnimationFrame(checkVolume);
         }
       }
+
       requestAnimationFrame(checkVolume);
     }
 
