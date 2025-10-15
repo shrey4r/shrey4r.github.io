@@ -29,7 +29,7 @@
 
     #startBtn {
       position: absolute;
-      bottom: 4px; /* moved down ~6px */
+      bottom: 15px; /* moved down ~6px */
       border: none;
       background: transparent;
       padding: 0;
@@ -100,7 +100,7 @@
           btn.classList.add('fade-out');
 
           setTimeout(() => {
-            scene.src = 'blown.png'; // stays on blown state permanently
+            scene.src = 'compBLOWN.png'; // stays on blown state permanently
           }, blowDuration);
         } else if (!hasBlown) {
           requestAnimationFrame(checkVolume);
