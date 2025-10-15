@@ -28,7 +28,7 @@
 
     #startBtn {
       position: absolute;
-      bottom: 32px;
+      bottom: 20px; /* lowered slightly */
       border: none;
       background: none;
       cursor: pointer;
@@ -37,7 +37,7 @@
     }
 
     #startBtn img {
-      width: 175px; /* slightly larger */
+      width: 165px; /* slightly smaller */
       height: auto;
       display: block;
       image-rendering: pixelated;
@@ -64,49 +64,4 @@
     const threshold = 0.25; // mic sensitivity
     const blowDuration = 3250; // duration of compBLOW.gif in ms
 
-    let audioContext, analyser, dataArray;
-    let hasBlown = false;
-    const img = document.getElementById("scene");
-    const startBtn = document.getElementById("startBtn");
-
-    startBtn.addEventListener("click", startMic);
-
-    async function startMic() {
-      try {
-        startBtn.classList.add("fade-out"); // start fading out
-        setTimeout(() => startBtn.style.display = "none", 800); // remove after fade
-
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        audioContext = new AudioContext();
-        const source = audioContext.createMediaStreamSource(stream);
-        analyser = audioContext.createAnalyser();
-        analyser.fftSize = 256;
-        const bufferLength = analyser.frequencyBinCount;
-        dataArray = new Uint8Array(bufferLength);
-        source.connect(analyser);
-        detectBlow();
-      } catch (err) {
-        console.error("Microphone error:", err);
-        alert("Please allow microphone access for this to work!");
-        startBtn.classList.remove("fade-out");
-      }
-    }
-
-    function detectBlow() {
-      if (hasBlown) return;
-      requestAnimationFrame(detectBlow);
-      analyser.getByteFrequencyData(dataArray);
-      const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length / 255;
-      if (avg > threshold) triggerBlow();
-    }
-
-    function triggerBlow() {
-      hasBlown = true;
-      img.src = "compBLOW.gif";
-      setTimeout(() => {
-        img.src = "compBLOWN.png";
-      }, blowDuration);
-    }
-  </script>
-</body>
-</html>
+    let audioContext, analyser, dataA
